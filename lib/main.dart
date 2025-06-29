@@ -3,8 +3,16 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'providers/sinais_provider.dart';
 import 'screens/home_screen.dart';
+import 'services/audio_service_hybrid.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // Inicializar serviço de áudio híbrido
+  final audioService = AudioServiceHybrid();
+  await audioService.initialize();
+  print('Serviço de áudio híbrido inicializado');
+
   runApp(const AgendadorApp());
 }
 

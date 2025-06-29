@@ -1,6 +1,7 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
+import 'dart:typed_data';
 import '../models/sinal_agendado.dart';
 
 // Callback para quando a notificação for disparada
@@ -65,7 +66,7 @@ class NotificationService {
   Future<void> agendarSinal(SinalAgendado sinal) async {
     if (!sinal.ativo) return;
 
-    const androidDetails = AndroidNotificationDetails(
+    final androidDetails = AndroidNotificationDetails(
       'sinal_channel',
       'Sinais Agendados',
       channelDescription: 'Notificações para sinais de música agendados',
@@ -75,10 +76,17 @@ class NotificationService {
       category: AndroidNotificationCategory.alarm,
       playSound: true,
       enableVibration: true,
+      vibrationPattern: Int64List.fromList([0, 1000, 500, 1000]),
       ongoing: true,
+      autoCancel: false,
+      showWhen: true,
+      when: DateTime.now().millisecondsSinceEpoch,
+      usesChronometer: false,
+      timeoutAfter: null,
+      audioAttributesUsage: AudioAttributesUsage.alarm,
     );
 
-    const notificationDetails = NotificationDetails(android: androidDetails);
+    final notificationDetails = NotificationDetails(android: androidDetails);
 
     if (sinal.repetir && sinal.diasSemana.isNotEmpty) {
       // Agendar para dias específicos da semana

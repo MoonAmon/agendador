@@ -72,17 +72,23 @@ class SinalCard extends StatelessWidget {
                 children: [
                   Icon(Icons.timer, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
-                  Text(
-                    _formatarDuracao(sinal.duracao),
-                    style: TextStyle(color: Colors.grey[600]),
+                  Expanded(
+                    child: Text(
+                      _formatarDuracao(sinal.duracao),
+                      style: TextStyle(color: Colors.grey[600]),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                   if (sinal.repetir) ...[
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 8),
                     Icon(Icons.repeat, size: 16, color: Colors.blue[600]),
                     const SizedBox(width: 4),
-                    Text(
-                      _formatarDiasRepetir(sinal.diasSemana),
-                      style: TextStyle(color: Colors.blue[600]),
+                    Expanded(
+                      child: Text(
+                        _formatarDiasRepetir(sinal.diasSemana),
+                        style: TextStyle(color: Colors.blue[600]),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ],

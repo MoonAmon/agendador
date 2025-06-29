@@ -6,6 +6,7 @@ import '../models/sinal_agendado.dart';
 import 'adicionar_sinal_screen.dart';
 import '../widgets/sinal_card.dart';
 import '../test_audio.dart';
+import '../services/audio_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

@@ -16,9 +16,19 @@ class StorageService {
       final prefs = await SharedPreferences.getInstance();
       final sinaisJson = sinais.map((sinal) => sinal.toJson()).toList();
       final sinaisString = jsonEncode(sinaisJson);
+
+      // Salvar com backup
       await prefs.setString(_sinaisKey, sinaisString);
+      await prefs.setString('${_sinaisKey}_backup', sinaisString);
+      await prefs.setInt(
+        '${_sinaisKey}_timestamp',
+        DateTime.now().millisecondsSinceEpoch,
+      );
+
+      print('Sinais salvos com sucesso: ${sinais.length} sinais');
     } catch (e) {
       print('Erro ao salvar sinais: $e');
+      rethrow;
     }
   }
 
@@ -26,18 +36,51 @@ class StorageService {
   Future<List<SinalAgendado>> carregarSinais() async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      final sinaisString = prefs.getString(_sinaisKey);
+      String? sinaisString = prefs.getString(_sinaisKey);
+
+      // Se não conseguir carregar, tentar backup
+      if (sinaisString == null || sinaisString.isEmpty) {
+        sinaisString = prefs.getString('${_sinaisKey}_backup');
+      }
 
       if (sinaisString == null || sinaisString.isEmpty) {
         return [];
       }
 
       final sinaisJson = jsonDecode(sinaisString) as List;
-      return sinaisJson.map((json) => SinalAgendado.fromJson(json)).toList();
+      final sinais = sinaisJson
+          .map((json) => SinalAgendado.fromJson(json))
+          .toList();
+
+      print('Sinais carregados com sucesso: ${sinais.length} sinais');
+      return sinais;
     } catch (e) {
       print('Erro ao carregar sinais: $e');
-      return [];
+      // Tentar carregar backup em caso de erro
+      return await _carregarBackup();
     }
+  }
+
+  // Carregar backup em caso de erro
+  Future<List<SinalAgendado>> _carregarBackup() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final backupString = prefs.getString('${_sinaisKey}_backup');
+
+      if (backupString != null && backupString.isNotEmpty) {
+        final sinaisJson = jsonDecode(backupString) as List;
+        final sinais = sinaisJson
+            .map((json) => SinalAgendado.fromJson(json))
+            .toList();
+
+        print('Sinais carregados do backup: ${sinais.length} sinais');
+        return sinais;
+      }
+    } catch (e) {
+      print('Erro ao carregar backup: $e');
+    }
+
+    return [];
   }
 
   // Salvar um sinal específico

@@ -5,7 +5,6 @@ import '../services/storage_service.dart';
 import '../services/notification_service.dart';
 import '../services/audio_service.dart';
 import '../services/scheduler_service.dart';
-// import '../services/background_service.dart'; // Removido temporariamente
 
 // Provider para gerenciar o estado dos sinais agendados
 class SinaisProvider extends ChangeNotifier {
@@ -32,15 +31,10 @@ class SinaisProvider extends ChangeNotifier {
   // Inicializar o provider
   Future<void> initialize() async {
     try {
-      // Remover BackgroundService problemático por enquanto
-      // await BackgroundService.initialize();
-
       await _notificationService.initialize();
       _notificationService.setNotificationCallback(tocarSinal);
       _schedulerService.initialize();
       await carregarSinais();
-
-      print('SinaisProvider inicializado');
     } catch (e) {
       _error = 'Erro ao inicializar: $e';
       print(_error);
@@ -276,7 +270,6 @@ class SinaisProvider extends ChangeNotifier {
 
   @override
   void dispose() {
-    // BackgroundService.dispose();
     _audioService.dispose();
     _schedulerService.dispose();
     super.dispose();

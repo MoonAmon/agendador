@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import '../models/sinal_agendado.dart';
-import '../services/audio_service.dart';
+import '../services/audio_service_hybrid.dart';
 
 // Serviço para agendar e executar sinais automaticamente
 class SchedulerService {
@@ -14,18 +14,23 @@ class SchedulerService {
   final List<SinalAgendado> _filaReproducao = [];
   final Set<String> _sinaisTocadosHoje = {};
   bool _executandoFila = false;
-  final AudioService _audioService = AudioService();
+  final AudioServiceHybrid _audioService = AudioServiceHybrid();
 
   // Inicializar o scheduler
   void initialize() {
-    // Verificar a cada 5 segundos se há sinais para tocar
-    _timer = Timer.periodic(const Duration(seconds: 5), (timer) {
+    // Parar timer anterior se existir
+    _timer?.cancel();
+
+    // Verificar a cada 1 minuto se há sinais para tocar
+    _timer = Timer.periodic(const Duration(minutes: 1), (timer) {
       _verificarSinaisParaTocar();
     });
-    print('SchedulerService inicializado - verificando a cada 5 segundos');
+    print('SchedulerService inicializado - verificando a cada minuto');
 
-    // Fazer uma verificação inicial
-    _verificarSinaisParaTocar();
+    // Fazer uma verificação inicial após 2 segundos
+    Timer(const Duration(seconds: 2), () {
+      _verificarSinaisParaTocar();
+    });
   }
 
   // Atualizar lista de sinais agendados
@@ -36,109 +41,70 @@ class SchedulerService {
 
   // Verificar se há sinais para tocar no momento atual
   void _verificarSinaisParaTocar() {
-    final agora = DateTime.now();
-    final sinaisParaTocar = <SinalAgendado>[];
-    final chaveMinutoAtual =
-        '${agora.year}-${agora.month}-${agora.day}-${agora.hour}-${agora.minute}';
+    try {
+      final agora = DateTime.now();
+      final sinaisParaTocar = <SinalAgendado>[];
+      final chaveMinutoAtual =
+          '${agora.year}-${agora.month}-${agora.day}-${agora.hour}-${agora.minute}';
 
-    print(
-      'Verificando sinais... Hora atual: ${agora.hour}:${agora.minute.toString().padLeft(2, '0')} - Sinais ativos: ${_sinaisAgendados.length}',
-    );
+      for (final sinal in _sinaisAgendados) {
+        try {
+          final chaveSinal = '${sinal.id}-$chaveMinutoAtual';
+          final deveTocar = _deveTocarAgora(sinal, agora);
+          final jaTocou = _sinaisTocadosHoje.contains(chaveSinal);
 
-    for (final sinal in _sinaisAgendados) {
-      final chaveSinal = '${sinal.id}-$chaveMinutoAtual';
-      final deveTocar = _deveTocarAgora(sinal, agora);
-      final jaTocou = _sinaisTocadosHoje.contains(chaveSinal);
-
-      print(
-        'Sinal: ${sinal.nome} - Deve tocar: $deveTocar - Já tocou: $jaTocou',
-      );
-
-      if (deveTocar && !jaTocou) {
-        sinaisParaTocar.add(sinal);
-        _sinaisTocadosHoje.add(chaveSinal);
-        print(
-          '*** SINAL ADICIONADO PARA TOCAR: ${sinal.nome} às ${agora.hour}:${agora.minute} ***',
-        );
+          if (deveTocar && !jaTocou) {
+            sinaisParaTocar.add(sinal);
+            _sinaisTocadosHoje.add(chaveSinal);
+            print('Sinal para tocar: ${sinal.nome}');
+          }
+        } catch (e) {
+          // Ignora erros individuais de sinais
+          print('Erro ao processar sinal ${sinal.nome}: $e');
+        }
       }
-    }
 
-    // Limpar cache de sinais tocados do dia anterior
-    _limparCacheAntigo(agora);
+      // Limpar cache de sinais tocados do dia anterior
+      _limparCacheAntigo(agora);
 
-    if (sinaisParaTocar.isNotEmpty) {
-      print('Adicionando ${sinaisParaTocar.length} sinais na fila');
-      _adicionarNaFila(sinaisParaTocar);
+      if (sinaisParaTocar.isNotEmpty) {
+        _adicionarNaFila(sinaisParaTocar);
+      }
+    } catch (e) {
+      print('Erro na verificação: $e');
     }
   }
 
   // Verificar se um sinal deve tocar agora
   bool _deveTocarAgora(SinalAgendado sinal, DateTime agora) {
-    final horarioSinal = TimeOfDay.fromDateTime(sinal.dataHora);
-    final horarioAtual = TimeOfDay.fromDateTime(agora);
+    try {
+      final horarioSinal = TimeOfDay.fromDateTime(sinal.dataHora);
+      final horarioAtual = TimeOfDay.fromDateTime(agora);
 
-    print('  Verificando sinal: ${sinal.nome}');
-    print(
-      '  Horário do sinal: ${horarioSinal.hour}:${horarioSinal.minute.toString().padLeft(2, '0')}',
-    );
-    print(
-      '  Horário atual: ${horarioAtual.hour}:${horarioAtual.minute.toString().padLeft(2, '0')}',
-    );
+      // Verificar se o horário coincide exatamente (mesmo minuto)
+      if (horarioSinal.hour != horarioAtual.hour ||
+          horarioSinal.minute != horarioAtual.minute) {
+        return false;
+      }
 
-    // Verificar se o horário coincide exatamente (mesmo minuto)
-    if (horarioSinal.hour != horarioAtual.hour ||
-        horarioSinal.minute != horarioAtual.minute) {
-      print('  Horário não coincide');
+      if (sinal.repetir && sinal.diasSemana.isNotEmpty) {
+        // Verificar se hoje é um dos dias da semana selecionados
+        final diaSemanaAtual = agora.weekday; // 1=segunda, 7=domingo
+        return sinal.diasSemana.contains(diaSemanaAtual);
+      } else {
+        // Sinal único - verificar se é hoje
+        final dataAlvo = DateTime(
+          sinal.dataHora.year,
+          sinal.dataHora.month,
+          sinal.dataHora.day,
+        );
+        final dataHoje = DateTime(agora.year, agora.month, agora.day);
+        return dataAlvo.isAtSameMomentAs(dataHoje);
+      }
+    } catch (e) {
+      print('Erro ao verificar sinal ${sinal.nome}: $e');
       return false;
     }
-
-    if (sinal.repetir && sinal.diasSemana.isNotEmpty) {
-      // Verificar se hoje é um dos dias da semana selecionados
-      final diaSemanaAtual = agora.weekday; // 1=segunda, 7=domingo
-      final diasSelecionados = sinal.diasSemana;
-
-      print(
-        '  Dia da semana atual: $diaSemanaAtual (${_nomeDiaSemana(diaSemanaAtual)})',
-      );
-      print('  Dias selecionados: $diasSelecionados');
-
-      final deveTocarHoje = diasSelecionados.contains(diaSemanaAtual);
-      print('  Deve tocar hoje: $deveTocarHoje');
-
-      return deveTocarHoje;
-    } else {
-      // Sinal único - verificar se é hoje
-      final dataAlvo = DateTime(
-        sinal.dataHora.year,
-        sinal.dataHora.month,
-        sinal.dataHora.day,
-      );
-      final dataHoje = DateTime(agora.year, agora.month, agora.day);
-      final ehHoje = dataAlvo.isAtSameMomentAs(dataHoje);
-
-      print(
-        '  Data do sinal: ${dataAlvo.day}/${dataAlvo.month}/${dataAlvo.year}',
-      );
-      print('  Data hoje: ${dataHoje.day}/${dataHoje.month}/${dataHoje.year}');
-      print('  É hoje: $ehHoje');
-
-      return ehHoje;
-    }
-  }
-
-  // Obter nome do dia da semana
-  String _nomeDiaSemana(int dia) {
-    const nomes = [
-      '',
-      'Segunda',
-      'Terça',
-      'Quarta',
-      'Quinta',
-      'Sexta',
-      'Sábado',
-      'Domingo',
-    ];
-    return nomes[dia];
   }
 
   // Adicionar sinais na fila de reprodução
@@ -210,7 +176,7 @@ class SchedulerService {
     _sinaisTocadosHoje.removeWhere((chave) => !chave.contains(chaveHoje));
   }
 
-  // Obter status da fila
+  // Getters para status
   int get tamanhoFila => _filaReproducao.length;
   bool get executandoFila => _executandoFila;
   List<String> get nomesNaFila => _filaReproducao.map((s) => s.nome).toList();

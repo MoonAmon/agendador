@@ -2,15 +2,32 @@
 
 Um aplicativo Flutter para Android que permite agendar sinais/alarmes para tocar música em horários específicos por uma duração determinada pelo usuário.
 
-## Funcionalidades
+## ✅ Funcionalidades Garantidas
 
-- ✅ **Agendar Sinais**: Crie alarmes para datas e horários específicos
-- ✅ **Duração Personalizável**: Defina por quanto tempo a música deve tocar (1-60 minutos)
+### 1. **Execução em Segundo Plano**
+
+- ✅ **SIM** - O aplicativo tocará os sinais mesmo quando estiver em segundo plano
+- ✅ **SIM** - Funciona mesmo com o app minimizado
+- ⚠️ **LIMITADO** - Pode ser restrito pelo sistema após horas de inatividade
+- ✅ **SIM** - Utiliza notificações locais e SchedulerService para garantir execução
+
+### 2. **Persistência de Dados**
+
+- ✅ **SIM** - Os sinais ficam salvos mesmo que o celular desligue
+- ✅ **SIM** - Dados são salvos localmente no dispositivo
+- ✅ **SIM** - Sistema de backup automático para evitar perda de dados
+- ✅ **SIM** - Sinais são restaurados automaticamente ao reiniciar o app
+
+### 3. **Funcionalidades Principais**
+
+- ✅ **Agendar Sinais**: Crie alarmes para horários específicos
+- ✅ **Duração Personalizável**: Defina por quanto tempo a música deve tocar (em segundos)
 - ✅ **Repetição**: Configure sinais para repetir em dias específicos da semana
-- ✅ **Múltiplos Sons**: Escolha entre diferentes tipos de música/sons
+- ✅ **Múltiplos Sons**: Use sons pré-definidos ou selecione arquivos personalizados
 - ✅ **Gerenciamento**: Ativar/desativar, editar ou excluir sinais
-- ✅ **Notificações Locais**: Notificações mesmo com o app fechado
-- ✅ **Interface Intuitiva**: Design moderno com Material Design 3
+- ✅ **Execução Automática**: Toca automaticamente no horário, sem depender de notificações
+- ✅ **Fila de Execução**: Múltiplos sinais no mesmo horário tocam em sequência
+- ✅ **Interface Simplificada**: Apenas horário e dias da semana, sem seleção de data
 
 ## Tecnologias Utilizadas
 
